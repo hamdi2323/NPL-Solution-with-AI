@@ -102,3 +102,141 @@ CONTRACTIONS = {
     "'ve": " have",
     "'m": " am",
 }
+#--------------------------------------------------------
+# 4.Preprocessing Functions
+# --------------------------------------------------------
+def normalise_text(text) -> str:
+    """
+    Apply basic text normalisation.
+
+    This includes lowercasing, slang replacement and contraction
+    expansion.
+
+    :param text: Raw input text.
+    :return: Normalised input text.
+    """
+    text = text.lower()
+
+    #replace slang
+    for pattern, replacement in SLANG_DICT.items():
+        text = re.sub(pattern, replacement, text)
+
+    #expand contractions
+    for contraction, expansion in CONTRACTIONS.items():
+        text = text.replace(contraction, expansion)
+    return text
+def remove_emojis(text:str) -> str:
+    """
+    Remove emoji and non-ASCII characters from input text.
+    :param text: input text.
+    :return: cleaned string.
+    """
+    return re.sub(r'[^\x00-\x7F]+', "", text)  # Fixed: removed extra bracket
+
+def normalise_repeated_characters(text:str) -> str:
+    """
+    Reduce repeated characters input text(e.g. 'soooooo'-> 'so').
+    :param text: Input text/string
+    :return: normalised string.
+    """
+    return re.sub(r'(.)\1{2,}', r'\1\1', text)
+
+def clean_text(text:str) -> str:
+    """
+    Remove punctuation and extra whitespace from input text.
+    :param text: Input text/string
+    :return: Cleaned string
+    """
+    text = re.sub(r'[^a-z\s]', '', text)
+    text = re.sub(r'\s+', ' ', text)  # Fixed: replaced empty string with space
+    return text.strip()
+
+def tokenise_and_filter(text:str) -> List[str]:
+    """
+    Tokenise text and remove stopwords
+    :param text: Cleaned text/string
+    :return: List of tokens
+    """
+    stop_words = set(stopwords.words('english'))
+    tokens = word_tokenize(text)
+    return [word for word in tokens if word not in stop_words and len(word)>2]
+
+def lemmatise_tokens(tokens:List[str]) -> List[str]:
+    """
+    Apply lemmatisation on tokens.
+
+    :param tokens: List of tokens
+    :return: List of lemmatised tokens
+    """
+    lemmatiser = WordNetLemmatizer()
+    return [lemmatiser.lemmatize(token) for token in tokens]
+
+#--------------------------------------------------------
+# 5.Pipeline Function
+# --------------------------------------------------------
+def preprocess_review(text:str) -> List[str]:
+    """
+    Apply full preprocessing pipeline to a single review.
+    :param text: Raw review
+    :return: List of cleaned tokens
+    """
+    text = normalise_text(text)
+    text = normalise_repeated_characters(text)
+    text = remove_emojis(text)
+    text = clean_text(text)
+
+    tokens = tokenise_and_filter(text)
+    tokens = lemmatise_tokens(tokens)
+    return tokens  # Fixed: added missing return statement
+
+#--------------------------------------------------------
+# 6.Visualisation
+# --------------------------------------------------------
+def plot_word_frequencies(reviews: List[str], processed: List[List[str]]) -> None:  # Fixed: simplified parameters
+    """
+    Plot word frequency comparison before and after preprocessing.
+
+    :param reviews: List of original review strings
+    :param processed: List of processed token lists
+    """
+    original_words = " ".join(reviews).lower().split()  # Fixed: use reviews parameter
+    processed_words = [word for review in processed for word in review]
+
+    orig_counts = Counter(original_words)
+    proc_counts = Counter(processed_words)
+
+    top_orig = dict(orig_counts.most_common(8))
+    top_proc = dict(proc_counts.most_common(8))
+
+    plt.figure()
+    plt.bar(top_orig.keys(), top_orig.values())
+    plt.title("Before Preprocessing")
+    plt.xticks(rotation=45)
+
+    plt.figure()
+    plt.bar(top_proc.keys(), top_proc.values())
+    plt.title("After Preprocessing")
+    plt.xticks(rotation=45)
+
+    plt.show()
+
+#--------------------------------------------------------
+# 7.Main Execution Function
+# --------------------------------------------------------
+def main():
+    """
+    Execute preprocessing pipeline.
+    """
+    print(f"\nOriginal Review:\n{REVIEWS[0]}")
+
+    processed_reviews = [preprocess_review(r) for r in REVIEWS]
+
+    print(f"\nProcessed Review:\n{processed_reviews[0]}")
+
+    plot_word_frequencies(REVIEWS, processed_reviews)  # Fixed: matching function signature
+
+# --------------------------------------------------
+# 8.Run the script
+# ---------------------------------------------------
+if __name__ == "__main__":
+    main()
