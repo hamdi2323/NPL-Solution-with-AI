@@ -170,17 +170,19 @@ def print_entities_flat(doc):
         doc : A processed spaCy Doc object.
     """
     print("\n" + "=" *70 )
-    print("Entities (sequential order")
+    print("Entities (sequential order)")
     print("=" *70 )
 
     if not doc.ents:
         print("No entities found/detected")
         return #stop further function execution
     for ent in doc.ents:
-        description = spacy. explain(ent.label_) or "-"
-        print(f"{ent.text: <30} -> {ent.label: > 21}"
-              f"[{description}]"
-              f"chars {ent.start_char} - {ent.end_char}")
+        description = spacy.explain(ent.label_) or "-"
+        print(f"{ent.text: <30} -> {ent.label_: >12}"
+              f" [{description}]"
+              f" chars {ent.start_char} - {ent.end_char}")
+
+
 def print_entities_grouped(doc) -> None:
     """
     Group entities by their label and print each group alphabetically.
@@ -192,10 +194,10 @@ def print_entities_grouped(doc) -> None:
         doc : A processed spaCy Doc object.
     """
     print("\n" + "=" *70 )
-    print("Entities (sequential order")
+    print("Entities Grouped by Type")
     print("=" *70 )
 
-    grouped = dict[str, list[str]] = collections.defaultdict(list)
+    grouped: dict[str, list[str]] = collections.defaultdict(list)
     for ent in doc.ents:
         grouped[ent.label_].append(ent.text)
 
@@ -203,7 +205,9 @@ def print_entities_grouped(doc) -> None:
         description = spacy.explain(label) or "-"
         entities = " , ".join(sorted(grouped[label])) # remove duplicate (deduplicate)
         print(f"\n {label} ({description})"
-        f" {entities}")
+              f" {entities}")
+
+
 def print_entities_rich_table(doc) -> None:
     """
     Render a nicely formatted table using the `rich` library (if installed).
@@ -226,7 +230,7 @@ def print_entities_rich_table(doc) -> None:
     console = Console()
     table = Table(
         title = 'Named Entities Detected',
-        box = rich.box.ROUNDED,
+        box = rich_box.ROUNDED,
         header_style = 'bold cyan',
         show_lines=True,
     )
@@ -240,7 +244,7 @@ def print_entities_rich_table(doc) -> None:
 
     #Color Map:entity label -> row style
     label_colours = {
-        'PERSON' : 'bright_magneta',
+        'PERSON' : 'bright_magenta',
         'ORG' :  'bright_blue',
         'GPE' : 'bright_cyan',
         'LOC' : 'cyan',
@@ -253,16 +257,18 @@ def print_entities_rich_table(doc) -> None:
 
     for n, ent in enumerate(doc.ents, start=1):
         description = spacy.explain(ent.label_) or "-"
-        colour = label_colours.get([ent.label_, "white"])
+        colour = label_colours.get(ent.label_, "white")
         table.add_row(
             str(n),
             f"[{colour}]{ent.text}[/{colour}]",
-            f"[{colour}]{ent.label}[/{colour}]",
+            f"[{colour}]{ent.label_}[/{colour}]",
             description,
             f"{ent.start_char} - {ent.end_char}"
         )
 
     console.print(table)
+
+
 #generate html document
 def save_displacy_html(doc, out_path:str = 'ner_displacy.html') -> None:
     """
@@ -285,6 +291,8 @@ def save_displacy_html(doc, out_path:str = 'ner_displacy.html') -> None:
 
         print(f"\n[INFO] displacy HTML saved to ->{out_path}"
               f"\n Open it in browser to see color-code entity spans.")
+
+
 #--------------------------------------------------------
 # 6.Summary Statistics
 # --------------------------------------------------------
@@ -304,7 +312,7 @@ def print_summary(doc) -> None:
     print("Summary Statistics")
     print("=" *70 )
 
-    tokens = [t for t in doc if not t. is_space]
+    tokens = [t for t in doc if not t.is_space]
     sentences = list(doc.sents)
     entities = list(doc.ents)
     print(f"Tokens: {len(tokens)}"
@@ -317,5 +325,51 @@ def print_summary(doc) -> None:
         for label, count in counter.most_common():
             description = spacy.explain(label) or "-"
             bar = "◍" * count
-            print(f"{label: < 12} {count: > 3} {bar} ({description})")
+            print(f"{label: <12} {count: >3} {bar} ({description})")
 
+
+#--------------------------------------------------------
+# 7.Main Execution Function
+# --------------------------------------------------------
+def main() -> None:
+    """
+    Run the full NER demonstration pipeline.
+    1.Load the medium English model
+    2.Process the sample text through pipeline
+    3.Print the entities in sequential(flat) order
+    4.Print the entities grouped by entity type
+    5.Optionally render a rich type table(if the 'rich' module is installed)
+    6.Print summary statistics
+    7.Save displaCy HTML visualisation to disk
+    :return:
+    """
+    print(__doc__) #prin the module's documentation string as an introduction banner
+    #step 1. Load the model
+    nlp = load_nlp_model("en_core_web_md")
+
+    #step 2. Run the pipeline
+    print(f"[INFO] Processing {len(SAMPLE_TEXT.split())} samples")
+    doc = run_ner(nlp, SAMPLE_TEXT)          # ← Fixed here
+
+    #step 3. Sequential Entity List
+    print_entities_flat(doc)
+
+    # step 4. Group by label
+    print_entities_grouped(doc)
+
+    #step 5. Optional rich table (degrades gracefully when 'rich' isn't avaliable
+    print_entities_rich_table(doc)
+
+    #step 6. Summary Stat
+    print_summary(doc)
+
+    #step 7. displaCy HTML
+    save_displacy_html(doc, out_path="ner_displacy.html")
+    print("\n [INFO] Done. NER Demo Complete.")
+
+
+#--------------------------------------------------------
+# 8. Run the script by invoking it's main() function
+# --------------------------------------------------------
+if __name__ == "__main__":
+    main()
