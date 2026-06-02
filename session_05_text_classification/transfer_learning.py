@@ -1,8 +1,8 @@
 """
-=============================================================
-Python script to demonstrate transfer learning for text
-classification using spaCy and transformers
-==============================================================
+=================================================================================================
+Python script to demonstrate Transfer Learning for Text Classification using spaCy & Transformers
+=================================================================================================
+
 This example demonstrates TRANSFER LEARNING in NLP using:
   - spaCy
   - Hugging Face Transformers
@@ -19,49 +19,49 @@ Task:
     - NEGATIVE
 
 Task pipeline:
-      1. Dependency checkinh
-      2. Building a transformer-based pipeline
-      3. Preparing training examples
-      4. Fine-tuing the classifier
-      5. Running inference on unseen text
-      6. Saving and loading the trained model
+    1. Dependancy checking
+    2. Building a transformer-based spaCy pipeline
+    3. Preparing training examples
+    4. Fine-tuning the classfier
+    5. Running interference on unseen text
+    6. Saving and loading the trained model
 
-Requirments:
+Requirements:
     pip install -U transformers torch spacy-transformers
-
-Author: Xamdi Salaad
-Date: 14-05-2026
 """
-#--------------------------------------------------------
-# 0.Import the required modules
-# --------------------------------------------------------
-from __future__ import annotations
+
+# ------------------------------------------------------------------------------------------
+# 0. Import the required modules
+# ------------------------------------------------------------------------------------------
+from __future__ import annotations # Ensure this is the 1st import to avoid errors
 import random, sys
+from importlib import reload
 from pathlib import Path
 from typing import Any
 
-#--------------------------------------------------------
-# 1. Dependency checks
-# --------------------------------------------------------
-def check_import(module_name: str, install_hint : str) -> Any:
 
+# ------------------------------------------------------------------------------------------
+# 1. Dependanc checks
+# ------------------------------------------------------------------------------------------
+def check_import(module_name: str, install_hint: str) -> Any:
     import importlib
     try:
         return importlib.import_module(module_name)
     except ImportError:
-        print(f"\n[ERROR] Missing dependency:  {module_name}"
-              f"\nInstall using: \n{install_hint}")
+        print(f"\n[ERROR] Missing dependancy: {module_name}"
+              f"\nInstall using: {install_hint}")
         sys.exit(1)
 
-#core library
+
+# Core libraries
 spacy = check_import("spacy", "pip install spacy")
 check_import("spacy_transformers", "pip install spacy_transformers torch")
 
 from spacy.training import Example
 
-#--------------------------------------------------------
+# ------------------------------------------------------------------------------------------
 # 2. Training data
-# --------------------------------------------------------
+# ------------------------------------------------------------------------------------------
 TRAIN_DATA = [
     (
         "I absolutely love this product",
@@ -89,16 +89,15 @@ TRAIN_DATA = [
     ),
 ]
 
-#--------------------------------------------------------
-# 3. Build spaCy pipeline with TRANSFORMER
-# --------------------------------------------------------
-print("\n[INFO] Creating NLP pipeline")
+# ------------------------------------------------------------------------------------------
+# 3. Building spaCy pipeline with TRANSFORMER
+# ------------------------------------------------------------------------------------------
+print("\n[INFO] Creating NLP Pipeline")
 
-#create blank English pipeline
+# Create blank English pipeline
 nlp = spacy.blank("en")
 
-#Add transformer component (Transfer learning happens here using a pretrained Hugging Face model)
-# Note: The correct factory name is "transformer", not "transformers"
+# Add transfromer component (Transfer learning happens here using a pretrained Hugging Face model)
 nlp.add_pipe(
     "transformer",
     config={
@@ -109,97 +108,94 @@ nlp.add_pipe(
     }
 )
 
-#Add text classifier (Modern spaCy versions auto-configure the architecture)
-# Note: Use nlp.add_pipe() instead of nlp.create_pipe()
+# Add text classifier (Modern spaCy version auto-configure the architectures)
 textcat = nlp.add_pipe("textcat", last=True)
 
-#Add labels
+# Add labels
 textcat.add_label("POSITIVE")
 textcat.add_label("NEGATIVE")
 
-print(f"\n[INFO] Pipeline components: {nlp.pipe_names}\n")
+print(f"\n[INFO] Pipeline components"
+      f"\n{nlp.pipe_names}")
 
-#--------------------------------------------------------
-# 4.Initialise training
-# --------------------------------------------------------
-print("\n[INFO] Initialising model")
+# ------------------------------------------------------------------------------------------
+# 4. Initialise training
+# ------------------------------------------------------------------------------------------
+print("\n[INFO Initialising model...")
 optimiser = nlp.initialize()
 
-#--------------------------------------------------------
-# 5.Training loop
-# --------------------------------------------------------
-print("\n[INFO] Starting fine-tuning")
+# ------------------------------------------------------------------------------------------
+# 5. Training Loop
+# ------------------------------------------------------------------------------------------
+print(f"\n[INFO] Starting fine-tuning model...\n")
 EPOCHS = 10
 
 for epoch in range(EPOCHS):
     random.shuffle(TRAIN_DATA)
 
-    # Initialize losses as a dictionary, not a tuple
     losses = {}
     examples = []
 
     for text, annotations in TRAIN_DATA:
         doc = nlp.make_doc(text)
         example = Example.from_dict(doc, annotations)
+
         examples.append(example)
 
-    # Update the model with all examples for this epoch
     nlp.update(
         examples,
         drop=0.2,
         losses=losses,
-        sgd=optimiser,
+        sgd=optimiser
     )
 
-    print(f"Epoch {epoch + 1:02d} | Loss: {losses.get('textcat', 0):.4f}")
+    print(f"Epoch {epoch + 1:02d} | Losses: {losses}")
 
-#--------------------------------------------------------
-#  6.Save model
-# --------------------------------------------------------
+# ------------------------------------------------------------------------------------------
+# 6. Save model
+# ------------------------------------------------------------------------------------------
 output_dir = Path("../files/sentiment_transformer_model")
 
-#create a directory
+# Create directory if misssing
 output_dir.mkdir(parents=True, exist_ok=True)
 
 nlp.to_disk(output_dir)
 
-#display save location
-print(f"\n[INFO] Saving model to:\n {output_dir.absolute()}")
+# Display save location
+print(f"\n[INFO] Saved model to {output_dir}")
 
-#--------------------------------------------------------
-# 7.Inference /prediction
-# --------------------------------------------------------
-print("\n[INFO] Inference Demo...\n")
-
-TEST_TEXT = [
+# ------------------------------------------------------------------------------------------
+# 7. Inference / Prediction
+# ------------------------------------------------------------------------------------------
+print("INFERENCE DEMO...\n")
+TEST_TEXTS = [
     "I really enjoyed this book",
     "The customer support was horrible",
     "Amazing performance by the actors",
     "This app is frustrating and buggy",
 ]
 
-for text in TEST_TEXT:
-    doc = nlp(text)  # Process the text through the full pipeline
+for text in TEST_TEXTS:
+    doc = nlp(text)
 
-    # Access the textcat component's predictions
-    positive_score = doc.cats["POSITIVE"]
-    negative_score = doc.cats["NEGATIVE"]
+    positive_core = doc.cats["POSITIVE"]
+    negative_core = doc.cats["NEGATIVE"]
 
     predicted = max(doc.cats, key=doc.cats.get)
+
     print("\n" + "-" * 55)
-    print(f"TEXT: {text}")
-    print(f"Predicted: {predicted}")
-    print(f"POSITIVE: {positive_score:.4f}")
-    print(f"NEGATIVE: {negative_score:.4f}")
+    print(f"TEXT        : {text}")
+    print(f"PREDICTION  : {predicted}")
+    print(f"POSITIVE    : {positive_core}")
+    print(f"NEGATIVE    : {negative_core}")
 
-#--------------------------------------------------------
-# 8. Optional: Reload saved model
-# --------------------------------------------------------
-print("\n" + "-" * 55)
-print("[INFO] Model Reload Demo")
-print("=" * 55)
+# ------------------------------------------------------------------------------------------
+# 8. ** OPTIONAL ** Reload saved model
+# ------------------------------------------------------------------------------------------
+print(f"\n" + "=" * 55)
+print("MODEL RELOADED DEMO")
+print(f"=" * 55)
 loaded_nlp = spacy.load(output_dir)
-reloaded_doc = loaded_nlp("I really enjoyed this book")
+reload_doc = loaded_nlp("This school desktop is amazing...")
 
-print(f"\nReloaded doc cats: {reloaded_doc.cats}")
-print(f"Predicted sentiment: {max(reloaded_doc.cats, key=reloaded_doc.cats.get)}")
+print(f"Reloaded model prediction: {reload_doc.cats}")
